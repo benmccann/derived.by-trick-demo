@@ -20,15 +20,13 @@
 	let i = $derived(won ? -1 : data.answers.length);
 
 	/** The current guess */
-	// svelte-ignore state_referenced_locally
-	let currentGuess = $state(data.guesses[i] || '');
-
-	$effect(() => {
-		currentGuess = data.guesses[i] || '';
+	let guess = $derived.by(() => {
+		let ret = $state({ current: data.guesses[i] || '' });
+		return ret;
 	});
 
 	/** Whether the current guess can be submitted */
-	let submittable = $derived(currentGuess.length === 5);
+	let submittable = $derived(guess.current.length === 5);
 
 	const { classnames, description } = $derived.by(() => {
 		/**
@@ -42,9 +40,8 @@
 		 */
 		let description: Record<string, string> = {};
 		data.answers.forEach((answer, i) => {
-			const guess = data.guesses[i];
-			for (let i = 0; i < 5; i += 1) {
-				const letter = guess[i];
+			for (let j = 0; j < 5; j += 1) {
+				const letter = data.guesses[i][j];
 				if (answer[i] === 'x') {
 					classnames[letter] = 'exact';
 					description[letter] = 'correct';
@@ -68,10 +65,10 @@
 		);
 
 		if (key === 'backspace') {
-			currentGuess = currentGuess.slice(0, -1);
+			guess.current = guess.current.slice(0, -1);
 			if (form?.badGuess) form.badGuess = false;
-		} else if (currentGuess.length < 5) {
-			currentGuess += key;
+		} else if (guess.current.length < 5) {
+			guess.current += key;
 		}
 	}
 
@@ -117,10 +114,10 @@
 			<h2 class="visually-hidden">Row {row + 1}</h2>
 			<div class="row" class:current>
 				{#each Array.from(Array(5).keys()) as column (column)}
-					{@const guess = current ? currentGuess : data.guesses[row]}
+					{@const currentGuess = current ? guess.current : data.guesses[row]}
 					{@const answer = data.answers[row]?.[column]}
-					{@const value = guess?.[column] ?? ''}
-					{@const selected = current && column === guess.length}
+					{@const value = currentGuess?.[column] ?? ''}
+					{@const selected = current && column === currentGuess.length}
 					{@const exact = answer === 'x'}
 					{@const close = answer === 'c'}
 					{@const missing = answer === '_'}
